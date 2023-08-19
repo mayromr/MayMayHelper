@@ -1,6 +1,7 @@
 using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.Utils;
 
 namespace Celeste.Mod.MaymayHelper
 {
@@ -12,6 +13,30 @@ namespace Celeste.Mod.MaymayHelper
         public RecallRefill(EntityData data, Vector2 offset) : base(data.Position + offset, data.Bool("twoDashes"), data.Bool("oneUse"))
         {
             RecallDelay = data.Float("recallDelay", 2);
+            DynamicData refillData = new(typeof(Refill), this);
+            string spritePath = "Maymayhelper/objects/RecallRefill-" + (data.Bool("twoDashes") ? '2': '1');
+
+            Remove(refillData.Get<Sprite>("sprite"));
+            Sprite idleSprite = new(GFX.Game, $"{spritePath}/idle");
+            idleSprite.AddLoop("idle", "", 0.15f);
+            idleSprite.Play("idle");
+            idleSprite.CenterOrigin();
+            Add(idleSprite);
+            refillData.Set("sprite", idleSprite);
+
+            Remove(refillData.Get<Sprite>("flash"));
+
+            Remove(refillData.Get<Image>("outline"));
+            Image outlineImage = new(GFX.Game[$"{spritePath}/outline"])
+            {
+                Visible = false,
+            };
+            outlineImage.CenterOrigin();
+            Add(outlineImage);
+            refillData.Set("outline", outlineImage);
+
+
+
         }
 
         private void OnPlayer(Player player)

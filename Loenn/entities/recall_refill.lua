@@ -24,7 +24,7 @@ recallRefill.placements = {
 }
 
 function recallRefill.texture(room, entity)
-    return entity.twoDashes and "objects/refillTwo/idle00" or "objects/refill/idle00"
+    return entity.twoDashes and "Maymayhelper/objects/RecallRefill-1/idle01" or "Maymayhelper/objects/RecallRefill-2/idle01"
 end
 
 
