@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Monocle;
@@ -9,20 +10,23 @@ namespace Celeste.Mod.MaymayHelper
     [Tracked(true)]
     public class PlayBackGhost : Entity
     {
+        private const float MainGhostAlpha = 0.5f;
+        private const float TrailAlpha = 0.25f;
+
         private readonly Player Player;
+        private readonly Hitbox NormalPlayerHitBox;
         private readonly PlayerSprite MainGhostSprite;
         private readonly PlayerHair MainGhostHair;
 
         internal LinkedList<ChaserState> chaserStates;
         private readonly float RecallDelay;
 
-        const float MainGhostAlpha = 0.5f;
-        const float TrailAlpha = 0.25f;
 
 
         public PlayBackGhost(Player player, float recallDelay)
         {
             Player = player;
+            NormalPlayerHitBox = (Hitbox)new DynamicData(Player).Get("normalHitbox");
             RecallDelay = recallDelay;
             Depth = Player.Depth + 1;
 
@@ -86,12 +90,11 @@ namespace Celeste.Mod.MaymayHelper
         public override void Render()
         {
             var head = chaserStates.First;
-            var normalHitbox = (Hitbox)new DynamicData(Player).Get("normalHitbox");
-            Vector2 offset = new(0, normalHitbox.CenterY);
+            Vector2 PlayerBodyOffset = new(0, NormalPlayerHitBox.CenterY);
 
             while (head != null && head.Next != null)
             {
-                Draw.Line(head.Value.Position + offset, head.Next.Value.Position + offset, head.Value.HairColor * TrailAlpha);
+                Draw.Line(head.Value.Position + PlayerBodyOffset, head.Next.Value.Position + PlayerBodyOffset, head.Value.HairColor * TrailAlpha);
 
                 head = head.Next;
             }
