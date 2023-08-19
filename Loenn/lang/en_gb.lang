@@ -1,0 +1,8 @@
+# Recall Refill
+entities.MayMayHelper/RecallRefill.placements.name.recall_refill_one_dash=Recall refill (one dash)
+entities.MayMayHelper/RecallRefill.placements.name.recall_refill_two_dash=Recall refill (two dash)
+
+entities.MayMayHelper/RecallRefill.attributes.name.recallDelay=Recall Delay
+entities.MayMayHelper/RecallRefill.attributes.description.recallDelay=The number of seconds the recall ghost is behind the player
+
+
