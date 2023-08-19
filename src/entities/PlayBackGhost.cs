@@ -13,7 +13,7 @@ namespace Celeste.Mod.MaymayHelper
         private readonly PlayerSprite MainGhostSprite;
         private readonly PlayerHair MainGhostHair;
 
-        private LinkedList<ChaserState> chaserStates;
+        internal LinkedList<ChaserState> chaserStates;
         private readonly float RecallDelay;
 
         const float MainGhostAlpha = 0.5f;

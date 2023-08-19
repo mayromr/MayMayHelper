@@ -1,5 +1,8 @@
 using Microsoft.Xna.Framework;
+using Mono.Cecil.Cil;
 using Monocle;
+using MonoMod.Cil;
+using MonoMod.Utils;
 
 namespace Celeste.Mod.MaymayHelper
 {
@@ -10,14 +13,15 @@ namespace Celeste.Mod.MaymayHelper
             On.Celeste.Player.DashBegin += OnDashBegin;
             On.Celeste.Player.Die += OnDeath;
             On.Celeste.LevelLoader.LoadingThread += CustomDashInitialize;
-
+            IL.Celeste.Level.Update += PatchLevelUpdate;
         }
 
         public static void Unload()
         {
-            On.Celeste.Player.DashBegin += OnDashBegin;
-            On.Celeste.Player.Die += OnDeath;
-            On.Celeste.LevelLoader.LoadingThread += CustomDashInitialize;
+            On.Celeste.Player.DashBegin -= OnDashBegin;
+            On.Celeste.Player.Die -= OnDeath;
+            On.Celeste.LevelLoader.LoadingThread -= CustomDashInitialize;
+            IL.Celeste.Level.Update -= PatchLevelUpdate;
         }
 
         private static void OnDashBegin(On.Celeste.Player.orig_DashBegin orig, Player self)
@@ -31,7 +35,7 @@ namespace Celeste.Mod.MaymayHelper
 
                     self.Position = teleportTarget;
 
-                    
+
 
                     if (self.Scene.CollideCheck<Solid>(self.Collider.Bounds) || self.Scene.CollideCheck<FloatySpaceBlock>(self.Collider.Bounds))
                     {
@@ -70,7 +74,34 @@ namespace Celeste.Mod.MaymayHelper
             }
 
             MaymayHelperModuleSession.HasRecallDash = false;
+        }
 
+        private static void PatchLevelUpdate(ILContext context)
+        {
+            ILCursor cursor = new(context);
+            cursor.Emit(OpCodes.Ldarg_0).EmitDelegate((Level level) =>
+            {
+                float unpausedTimer = (float)new DynamicData(level).Get("unpauseTimer");
+                if (unpausedTimer > 0f && level.Tracker.GetEntity<PlayBackGhost>()?.chaserStates is { } chaserStates)
+                {
+                    float offset = Engine.DeltaTime;
+
+                    if (unpausedTimer - Engine.RawDeltaTime <= 0f)
+                    {
+                        offset *= 2;
+                    }
+
+                    var head = chaserStates.First;
+
+                    while (head != null)
+                    {
+                        var chaserState = head.Value;
+                        chaserState.TimeStamp += offset;
+                        head.Value = chaserState;
+                        head = head.Next;
+                    }
+                }
+            });
         }
     }
 }
