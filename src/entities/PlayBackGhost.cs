@@ -24,6 +24,8 @@ namespace Celeste.Mod.MaymayHelper
         {
             Player = player;
             RecallDelay = recallDelay;
+            Depth = Player.Depth + 1;
+
             MainGhostSprite = new(PlayerSpriteMode.Playback);
 
             MainGhostHair = new(MainGhostSprite)
