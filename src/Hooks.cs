@@ -32,7 +32,7 @@ namespace Celeste.Mod.MaymayHelper
                 PlayBackGhost playBackGhost = self.Scene.Tracker.GetEntity<PlayBackGhost>();
                 if (playBackGhost != null)
                 {
-                    Vector2 teleportTarget = playBackGhost.PeekOldestChaserState().Position;
+                    Vector2 teleportTarget = playBackGhost.GetTeleportPosition();
 
                     self.Position = teleportTarget;
 

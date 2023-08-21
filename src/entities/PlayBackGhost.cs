@@ -53,7 +53,7 @@ namespace Celeste.Mod.MaymayHelper
 
         private void InitChaserStates()
         {
-            chaserStatesQueue = new();
+            chaserStatesQueue = new((int)(60 * recallDelay));
             pauseOffset = 0;
 
             if (player != null && !player.Dead)
@@ -113,9 +113,9 @@ namespace Celeste.Mod.MaymayHelper
         }
 
 
-        public ChaserState PeekOldestChaserState()
+        public Vector2 GetTeleportPosition()
         {
-            return chaserStatesQueue.Count > 0 ? chaserStatesQueue.Peek() : new ChaserState(player);
+            return chaserStatesQueue.Count > 0 ? chaserStatesQueue.Peek().Position : player.Position;
         }
     }
 }
