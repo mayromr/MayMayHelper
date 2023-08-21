@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Mono.Cecil.Cil;
 using Monocle;
@@ -82,24 +83,23 @@ namespace Celeste.Mod.MaymayHelper
             cursor.Emit(OpCodes.Ldarg_0).EmitDelegate((Level level) =>
             {
                 float unpausedTimer = (float)new DynamicData(level).Get("unpauseTimer");
-                if (unpausedTimer > 0f && level.Tracker.GetEntity<PlayBackGhost>()?.chaserStates is { } chaserStates)
+                if (unpausedTimer > 0f)
                 {
-                    float offset = Engine.DeltaTime;
-
-                    if (unpausedTimer - Engine.RawDeltaTime <= 0f)
+                    foreach (PlayBackGhost playBackGhost in level.Tracker.GetEntities<PlayBackGhost>().Cast<PlayBackGhost>())
                     {
-                        offset *= 2;
+                        if (playBackGhost != null)
+                        {
+                            float offset = Engine.DeltaTime;
+
+                            if (unpausedTimer - Engine.RawDeltaTime <= 0f)
+                            {
+                                offset *= 2;
+                            }
+
+                            playBackGhost.pauseOffset += offset;
+                        }
                     }
 
-                    var head = chaserStates.First;
-
-                    while (head != null)
-                    {
-                        var chaserState = head.Value;
-                        chaserState.TimeStamp += offset;
-                        head.Value = chaserState;
-                        head = head.Next;
-                    }
                 }
             });
         }

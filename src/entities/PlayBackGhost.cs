@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.Utils;
@@ -13,26 +14,27 @@ namespace Celeste.Mod.MaymayHelper
         private const float MainGhostAlpha = 0.5f;
         private const float TrailAlpha = 0.25f;
 
-        private readonly Player Player;
-        private readonly Hitbox NormalPlayerHitBox;
-        private readonly PlayerSprite MainGhostSprite;
-        private readonly PlayerHair MainGhostHair;
+        private readonly Player player;
+        private readonly Hitbox normalPlayerHitBox;
+        private readonly PlayerSprite mainGhostSprite;
+        private readonly PlayerHair mainGhostHair;
 
-        internal LinkedList<ChaserState> chaserStates;
-        private readonly float RecallDelay;
+        internal Queue<ChaserState> chaserStatesQueue;
+        internal float pauseOffset = 0;
+        private readonly float recallDelay;
 
 
 
         public PlayBackGhost(Player player, float recallDelay)
         {
-            Player = player;
-            NormalPlayerHitBox = (Hitbox)new DynamicData(Player).Get("normalHitbox");
-            RecallDelay = recallDelay;
-            Depth = Player.Depth + 1;
+            this.player = player;
+            normalPlayerHitBox = (Hitbox)new DynamicData(this.player).Get("normalHitbox");
+            this.recallDelay = recallDelay;
+            Depth = this.player.Depth + 1;
 
-            MainGhostSprite = new(PlayerSpriteMode.Playback);
+            mainGhostSprite = new(PlayerSpriteMode.Playback);
 
-            MainGhostHair = new(MainGhostSprite)
+            mainGhostHair = new(mainGhostSprite)
             {
                 Border = Color.Black * MainGhostAlpha
             };
@@ -42,8 +44,8 @@ namespace Celeste.Mod.MaymayHelper
                 OnInEnd = InitChaserStates
             };
 
-            Add(MainGhostHair);
-            Add(MainGhostSprite);
+            Add(mainGhostHair);
+            Add(mainGhostSprite);
             Add(transitionListener);
 
             InitChaserStates();
@@ -51,37 +53,42 @@ namespace Celeste.Mod.MaymayHelper
 
         private void InitChaserStates()
         {
-            chaserStates = new();
+            chaserStatesQueue = new();
+            pauseOffset = 0;
 
-            if (Player != null && !Player.Dead)
+            if (player != null && !player.Dead)
             {
-                chaserStates.AddFirst(new ChaserState(Player)); ;
+                chaserStatesQueue.Enqueue(new ChaserState(player)); ;
             }
         }
 
         public override void Update()
         {
-            if (Player != null && !Player.Dead)
+            if (player != null && !player.Dead)
             {
-                chaserStates.AddFirst(new ChaserState(Player));
-            }
-            while (chaserStates.Count > 0 && ((Scene.TimeActive - chaserStates.Last.Value.TimeStamp) > RecallDelay))
-            {
-                chaserStates.RemoveLast();
+                ChaserState newState = new(player);
+                newState.TimeStamp -= pauseOffset;
+                chaserStatesQueue.Enqueue(newState);
             }
 
-            if (chaserStates.Count != 0)
+            while (chaserStatesQueue.Count > 0 && ((Scene.TimeActive - (chaserStatesQueue.Peek().TimeStamp + pauseOffset)) > recallDelay))
             {
-                ChaserState chaserState = chaserStates.Last.Value;
-                if (chaserState.Animation != MainGhostSprite.CurrentAnimationID && chaserState.Animation != null && MainGhostSprite.Has(chaserState.Animation))
+                chaserStatesQueue.Dequeue();
+            }
+
+            if (chaserStatesQueue.Count != 0)
+            {
+                ChaserState chaserState = chaserStatesQueue.Peek();
+
+                if (chaserState.Animation != mainGhostSprite.CurrentAnimationID && chaserState.Animation != null && mainGhostSprite.Has(chaserState.Animation))
                 {
-                    MainGhostSprite.Play(chaserState.Animation, true, false);
+                    mainGhostSprite.Play(chaserState.Animation, true, false);
                 }
 
-                MainGhostSprite.Scale = chaserState.Scale;
-                MainGhostHair.Facing = chaserState.Facing;
-                MainGhostHair.Color = chaserState.HairColor * MainGhostAlpha;
-                MainGhostSprite.Color = chaserState.HairColor * MainGhostAlpha;
+                mainGhostSprite.Scale = chaserState.Scale;
+                mainGhostHair.Facing = chaserState.Facing;
+                mainGhostHair.Color = chaserState.HairColor * MainGhostAlpha;
+                mainGhostSprite.Color = chaserState.HairColor * MainGhostAlpha;
                 Position = chaserState.Position;
             }
 
@@ -89,14 +96,17 @@ namespace Celeste.Mod.MaymayHelper
         }
         public override void Render()
         {
-            var head = chaserStates.First;
-            Vector2 PlayerBodyOffset = new(0, NormalPlayerHitBox.CenterY);
-
-            while (head != null && head.Next != null)
+            if (chaserStatesQueue.Count > 0)
             {
-                Draw.Line(head.Value.Position + PlayerBodyOffset, head.Next.Value.Position + PlayerBodyOffset, head.Value.HairColor * TrailAlpha);
+                Vector2 PlayerBodyOffset = new(0, normalPlayerHitBox.CenterY);
 
-                head = head.Next;
+                var PrevState = chaserStatesQueue.Peek();
+                foreach (var currentState in chaserStatesQueue.Skip(1))
+                {
+                    Draw.Line(PrevState.Position + PlayerBodyOffset, currentState.Position + PlayerBodyOffset, PrevState.HairColor * TrailAlpha);
+                    PrevState = currentState;
+                }
+
             }
 
             base.Render();
@@ -105,7 +115,7 @@ namespace Celeste.Mod.MaymayHelper
 
         public ChaserState PeekOldestChaserState()
         {
-            return chaserStates.Last?.Value ?? new ChaserState();
+            return chaserStatesQueue.Count > 0 ? chaserStatesQueue.Peek() : new ChaserState(player);
         }
     }
 }
