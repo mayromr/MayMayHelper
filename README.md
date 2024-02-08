@@ -1,2 +1,2 @@
 # MaymayHelper
-Replace with your mod's readme!
+https://gamebanana.com/mods/463445
